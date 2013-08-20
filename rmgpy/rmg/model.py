@@ -435,13 +435,12 @@ class CoreEdgeReactionModel:
         # Now use short-list to check for matches. All should be in same forward direction.
         for rxn0 in my_reactionList:
             if (rxn0.reactants == rxn.reactants and rxn0.products == rxn.products):
-                if rxn0.template == rxn.template:
+                if set(rxn0.template) == set(rxn.template):
                     return True, rxn0
             
             if isinstance(family,KineticsFamily) and family.ownReverse:
                 if (rxn0.reactants == rxn.products and rxn0.products == rxn.reactants):
-                    if rxn0.template == rxn.template:
-                        return True, rxn0
+                    return True, rxn0
 
         # Now check seed mechanisms
         # We want to check for duplicates in *other* seed mechanisms, but allow
