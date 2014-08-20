@@ -569,16 +569,16 @@ class KineticsFamily(Database):
             # Load everything. This option is generally used for working with the database
             # load all the remaining depositories, in order returned by os.walk
             for root, dirs, files in os.walk(path):
-                for f in files:
-                    if not f.endswith('.py'): continue
-                    name = f.split('.py')[0]
-                    if name not in ['groups', 'rules']:
-                        fpath = os.path.join(path, f)
-                        label = '{0}/{1}'.format(self.label, name)
-                        depository = KineticsDepository(label=label)
-                        logging.debug("Loading kinetics family depository from {0}".format(fpath))
-                        depository.load(fpath, local_context, global_context)
-                        self.depositories.append(depository)
+                for name in dirs:
+                    #if not f.endswith('.py'): continue
+                    #name = f.split('.py')[0]
+                    #if name not in ['groups', 'rules']:
+                    fpath = os.path.join(path, name, 'reactions.py')
+                    label = '{0}/{1}'.format(self.label, name)
+                    depository = KineticsDepository(label=label)
+                    logging.debug("Loading kinetics family depository from {0}".format(fpath))
+                    depository.load(fpath, local_context, global_context)
+                    self.depositories.append(depository)
             return
                     
         if not depositoryLabels:
@@ -597,8 +597,8 @@ class KineticsFamily(Database):
             if name == '!training':
                 continue
             label = '{0}/{1}'.format(self.label, name)
-            f = name+'.py'
-            fpath = os.path.join(path,f)
+            #f = name+'.py'
+            fpath = os.path.join(path, name, 'reactions.py')
             if not os.path.exists(fpath):
                 logging.warning("Requested depository {0} does not exist".format(fpath))
                 continue
@@ -657,8 +657,8 @@ class KineticsFamily(Database):
         Save the given kinetics family `depository` to the location `path` on
         disk.
         """
-        depository.save(os.path.join(path,'reactions.py'))
         depository.saveDictionary(os.path.join(path,'dictionary.txt'))
+        depository.save(os.path.join(path,'reactions.py'))
         
     def saveGroups(self, path, entryName='entry'):
         """

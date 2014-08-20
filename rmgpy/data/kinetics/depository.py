@@ -178,15 +178,15 @@ class KineticsDepository(Database):
                   rank=None,
                   ):
         
-        reactants = [Species().fromAdjacencyList(reactant1)]
-        if reactant2 is not None: reactants.append(Species().fromAdjacencyList(reactant2))
-        if reactant3 is not None: reactants.append(Species().fromAdjacencyList(reactant3))
-
-        products = [Species().fromAdjacencyList(product1)]
-        if product2 is not None: products.append(Species().fromAdjacencyList(product2))
-        if product3 is not None: products.append(Species().fromAdjacencyList(product3))
+#        reactants = [Species().fromAdjacencyList(reactant1)]
+#        if reactant2 is not None: reactants.append(Species().fromAdjacencyList(reactant2))
+#        if reactant3 is not None: reactants.append(Species().fromAdjacencyList(reactant3))
+#
+#        products = [Species().fromAdjacencyList(product1)]
+#        if product2 is not None: products.append(Species().fromAdjacencyList(product2))
+#        if product3 is not None: products.append(Species().fromAdjacencyList(product3))
         
-        reaction = Reaction(reactants=reactants, products=products, degeneracy=degeneracy, duplicate=duplicate, reversible=reversible)
+        reaction = Reaction(reactants=[], products=[], degeneracy=degeneracy, duplicate=duplicate, reversible=reversible)
         
         entry = Entry(
             index = index,
