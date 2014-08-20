@@ -650,14 +650,15 @@ class KineticsFamily(Database):
         self.saveGroups(os.path.join(path, 'groups.py'), entryName=entryName)
         self.rules.save(os.path.join(path, 'rules.py'))
         for depository in self.depositories:
-            self.saveDepository(depository, os.path.join(path, '{0}.py'.format(depository.label[len(self.label)+1:])))
+            self.saveDepository(depository, os.path.join(path, '{0}'.format(depository.label[len(self.label)+1:])))
     
     def saveDepository(self, depository, path):
         """
         Save the given kinetics family `depository` to the location `path` on
         disk.
         """
-        depository.save(os.path.join(path))        
+        depository.save(os.path.join(path,'reactions.py'))
+        depository.saveDictionary(os.path.join(path,'dictionary.txt'))
         
     def saveGroups(self, path, entryName='entry'):
         """
@@ -892,7 +893,7 @@ class KineticsFamily(Database):
             data.changeT0(1)
             
             # Estimate the thermo for the reactants and products
-            item = Reaction(reactants=[m.copy(deep=True) for m in entry.item.reactants], products=[m.copy(deep=True) for m in entry.item.products])
+            item = Reaction(reactants=[m.molecule[0].copy(deep=True) for m in entry.item.reactants], products=[m.molecule[0].copy(deep=True) for m in entry.item.products])
             item.reactants = [Species(molecule=[m]) for m in item.reactants]
             for reactant in item.reactants:
                 reactant.generateResonanceIsomers()
@@ -905,7 +906,7 @@ class KineticsFamily(Database):
             item.kinetics = data
             data = item.generateReverseRateCoefficient()
             
-            item = Reaction(reactants=[m.copy(deep=True) for m in entry.item.products], products=[m.copy(deep=True) for m in entry.item.reactants])
+            item = Reaction(reactants=[m.molecule[0].copy(deep=True) for m in entry.item.products], products=[m.molecule[0].copy(deep=True) for m in entry.item.reactants])
             template = self.getReactionTemplate(item)
             item.degeneracy = self.calculateDegeneracy(item)
             
