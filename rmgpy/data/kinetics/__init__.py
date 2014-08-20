@@ -258,7 +258,7 @@ class KineticsDatabase(object):
         f.write('\n\n')
         f.write('recommendedFamilies = {\n')
         for label in sorted(self.recommendedFamilies.keys()):
-            f.write("'{label}':{value},\n".format(label=label,value=self.recommendedFamilies[label]))
+            f.write("'{label}': {value},\n".format(label=label,value=self.recommendedFamilies[label]))
         f.write('}')
         f.close()
         
