@@ -125,38 +125,38 @@ class KineticsDepository(Database):
         import os
         Database.load(self, path, local_context, global_context)
         
-        # Load the species in the kinetics library
-        speciesDict = self.getSpecies(os.path.join(os.path.dirname(path),'dictionary.txt'))
-        # Make sure all of the reactions draw from only this set
-        entries = self.entries.values()
-        for entry in entries:
-            # Create a new reaction per entry
-            rxn = entry.item
-            rxn_string = entry.label
-            # Convert the reactants and products to Species objects using the speciesDict
-            reactants, products = rxn_string.split('=')
-            reversible = True
-            if '<=>' in rxn_string:
-                reactants = reactants[:-1]
-                products = products[1:]
-            elif '=>' in rxn_string:
-                products = products[1:]
-                reversible = False
-            assert reversible == rxn.reversible
-            for reactant in reactants.split('+'):
-                reactant = reactant.strip()
-                if reactant not in speciesDict:
-                    raise DatabaseError('Species {0} in kinetics depository {1} is missing from its dictionary.'.format(reactant, self.label))
-                rxn.reactants.append(speciesDict[reactant])
-            for product in products.split('+'):
-                product = product.strip()
-                if product not in speciesDict:
-                    raise DatabaseError('Species {0} in kinetics depository {1} is missing from its dictionary.'.format(product, self.label))
-                rxn.products.append(speciesDict[product])
-                
-            if not rxn.isBalanced():
-                raise DatabaseError('Reaction {0} in kinetics depository {1} was not balanced! Please reformulate.'.format(rxn, self.label))    
-            
+#        # Load the species in the kinetics library
+#        speciesDict = self.getSpecies(os.path.join(os.path.dirname(path),'dictionary.txt'))
+#        # Make sure all of the reactions draw from only this set
+#        entries = self.entries.values()
+#        for entry in entries:
+#            # Create a new reaction per entry
+#            rxn = entry.item
+#            rxn_string = entry.label
+#            # Convert the reactants and products to Species objects using the speciesDict
+#            reactants, products = rxn_string.split('=')
+#            reversible = True
+#            if '<=>' in rxn_string:
+#                reactants = reactants[:-1]
+#                products = products[1:]
+#            elif '=>' in rxn_string:
+#                products = products[1:]
+#                reversible = False
+#            assert reversible == rxn.reversible
+#            for reactant in reactants.split('+'):
+#                reactant = reactant.strip()
+#                if reactant not in speciesDict:
+#                    raise DatabaseError('Species {0} in kinetics depository {1} is missing from its dictionary.'.format(reactant, self.label))
+#                rxn.reactants.append(speciesDict[reactant])
+#            for product in products.split('+'):
+#                product = product.strip()
+#                if product not in speciesDict:
+#                    raise DatabaseError('Species {0} in kinetics depository {1} is missing from its dictionary.'.format(product, self.label))
+#                rxn.products.append(speciesDict[product])
+#                
+#            if not rxn.isBalanced():
+#                raise DatabaseError('Reaction {0} in kinetics depository {1} was not balanced! Please reformulate.'.format(rxn, self.label))    
+#            
 
     def loadEntry(self,
                   index,
@@ -178,15 +178,19 @@ class KineticsDepository(Database):
                   rank=None,
                   ):
         
-#        reactants = [Species().fromAdjacencyList(reactant1)]
-#        if reactant2 is not None: reactants.append(Species().fromAdjacencyList(reactant2))
-#        if reactant3 is not None: reactants.append(Species().fromAdjacencyList(reactant3))
-#
-#        products = [Species().fromAdjacencyList(product1)]
-#        if product2 is not None: products.append(Species().fromAdjacencyList(product2))
-#        if product3 is not None: products.append(Species().fromAdjacencyList(product3))
+        reactants = [Species().fromAdjacencyList(reactant1)]
+        if reactant2 is not None: reactants.append(Species().fromAdjacencyList(reactant2))
+        if reactant3 is not None: reactants.append(Species().fromAdjacencyList(reactant3))
+
+        products = [Species().fromAdjacencyList(product1)]
+        if product2 is not None: products.append(Species().fromAdjacencyList(product2))
+        if product3 is not None: products.append(Species().fromAdjacencyList(product3))
         
-        reaction = Reaction(reactants=[], products=[], degeneracy=degeneracy, duplicate=duplicate, reversible=reversible)
+        for reactant in reactants:
+            reactant.label = reactant.molecule[0].getFormula()
+        for product in products:
+            product.label = product.molecule[0].getFormula()
+        reaction = Reaction(reactants=reactants, products=products, degeneracy=degeneracy, duplicate=duplicate, reversible=reversible)
         
         entry = Entry(
             index = index,

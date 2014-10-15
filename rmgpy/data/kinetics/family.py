@@ -569,15 +569,16 @@ class KineticsFamily(Database):
             # Load everything. This option is generally used for working with the database
             # load all the remaining depositories, in order returned by os.walk
             for root, dirs, files in os.walk(path):
-                for name in dirs:
+                for name in ['NIST','training']:
                     #if not f.endswith('.py'): continue
                     #name = f.split('.py')[0]
                     #if name not in ['groups', 'rules']:
-                    fpath = os.path.join(path, name, 'reactions.py')
+                    fpath = os.path.join(path, name + '.py')
                     label = '{0}/{1}'.format(self.label, name)
                     depository = KineticsDepository(label=label)
                     logging.debug("Loading kinetics family depository from {0}".format(fpath))
-                    depository.load(fpath, local_context, global_context)
+                    if os.path.exists(fpath):
+                        depository.load(fpath, local_context, global_context)
                     self.depositories.append(depository)
             return
                     
