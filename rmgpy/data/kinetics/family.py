@@ -642,20 +642,19 @@ class KineticsFamily(Database):
         Rank is set to a default value of 3 unless otherwise indicated
         """ 
         from rmgpy import settings
-        import shutil
 
         training_path = os.path.join(settings['database.directory'], 'kinetics', 'families', \
             self.label, 'training')
 
-        directory_orig = os.path.join(training_path, 'dictionary.txt')
-        directory_file = os.path.join(training_path, 'dictionary_test.txt')
-        shutil.copy(directory_orig, directory_file)
-        rxns_file_orig = os.path.join(training_path, 'reactions.py')
-        rxns_file = os.path.join(training_path, 'reactions_test.py')
-        shutil.copy(rxns_file_orig, rxns_file)
+        #directory_orig = os.path.join(training_path, 'dictionary.txt')
+        directory_file = os.path.join(training_path, 'dictionary.txt')
+        #shutil.copy(directory_orig, directory_file)
+        #rxns_file_orig = os.path.join(training_path, 'reactions.py')
+        rxns_file = os.path.join(training_path, 'reactions.py')
+        #shutil.copy(rxns_file_orig, rxns_file)
 
         # Load the old set of the species of the training reactions
-        speciesDict = Database().getSpecies(directory_orig)
+        speciesDict = Database().getSpecies(directory_file)
 
         # add new unique species with labeledAtoms into speciesDict
         for rxn in reactions:
