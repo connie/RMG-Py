@@ -82,16 +82,21 @@ def react(spcA, speciesList=None, recombination=False):
     else:
         combos = list(itertools.product(molsA, molsB))
 
-    results = map_(
-                WorkerWrapper(reactMolecules),
-                combos,
-                recombination
-            )
+    if recombination:
+        results = map_(
+            WorkerWrapper(reactRecombinationMolecules),
+            combos,
+        )
+    else:
+        results = map_(
+                    WorkerWrapper(reactMolecules),
+                    combos,
+                )
 
     reactionList = itertools.chain.from_iterable(results)
     return reactionList
 
-def reactMolecules(moleculeTuples, recombination):
+def reactMolecules(moleculeTuples):
     """
     Performs a reaction between
     the resonance isomers.
@@ -106,15 +111,9 @@ def reactMolecules(moleculeTuples, recombination):
     
     reactionList = []
     
-    if recombination:
-        family = families['R_Recombination']
+    for _, family in families.iteritems():
         rxns = family.generateReactions(molecules)
         reactionList.extend(rxns)
-    else:
-        for _, family in families.iteritems():
-            if family.label != 'R_Recombination':
-                rxns = family.generateReactions(molecules)
-                reactionList.extend(rxns)
 
     for reactant in molecules:
         reactant.clearLabeledAtoms()
@@ -123,6 +122,35 @@ def reactMolecules(moleculeTuples, recombination):
         deflate(rxn, molecules, reactantIndices)
 
     return reactionList
+
+def reactRecombinationMolecules(moleculeTuples):
+    """
+    Performs a reaction between
+    the resonance isomers.
+
+    The parameter contains a list of tuples with each tuple:
+    (Molecule, index of the core species it belongs to)
+    """
+
+    families = getDB('kinetics').families
+    
+    molecules, reactantIndices = zip(*moleculeTuples)
+    
+    reactionList = []
+    
+
+    family = families['R_Recombination']
+    rxns = family.generateReactions(molecules)
+    reactionList.extend(rxns)
+
+    for reactant in molecules:
+        reactant.clearLabeledAtoms()
+
+    for rxn in reactionList:
+        deflate(rxn, molecules, reactantIndices)
+
+    return reactionList
+
 
 def deflate(rxn, reactants, reactantIndices):
     """
