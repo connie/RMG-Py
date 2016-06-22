@@ -166,6 +166,7 @@ cdef class ReactionSystem(DASx):
         # A value of 1 in the matrix indicates the species is above the threshold to react or participate in those reactions
         self.unimolecularThreshold = None
         self.bimolecularThreshold = None
+        self.recombinationThreshold = None
 
     def __reduce__(self):
         """
@@ -213,6 +214,7 @@ cdef class ReactionSystem(DASx):
         self.sensitivityCoefficients = numpy.zeros((self.numCoreSpecies, self.numCoreReactions), numpy.float64)
         self.unimolecularThreshold = numpy.zeros((self.numCoreSpecies), bool)
         self.bimolecularThreshold = numpy.zeros((self.numCoreSpecies, self.numCoreSpecies), bool)
+        self.recombinationThreshold = numpy.zeros((self.numCoreSpecies, self.numCoreSpecies), bool)
         
 
     def initialize_solver(self):
@@ -311,6 +313,7 @@ cdef class ReactionSystem(DASx):
             for j in xrange(i, numCoreSpecies):
                 if self.coreSpeciesConcentrations[i] > 0 and self.coreSpeciesConcentrations[j] > 0:
                     self.bimolecularThreshold[i,j] = True
+                    self.recombinationThreshold[i,j] = True
 
     def set_initial_derivative(self):
         """
@@ -371,7 +374,7 @@ cdef class ReactionSystem(DASx):
         cdef object maxSpecies, maxNetwork
         cdef int i, j, k
         cdef numpy.ndarray[numpy.float64_t, ndim=1] forwardRateCoefficients, coreSpeciesConcentrations
-        cdef double  prevTime, totalMoles, c, volume, RTP, unimolecularThresholdVal, bimolecularThresholdVal
+        cdef double  prevTime, totalMoles, c, volume, RTP, unimolecularThresholdVal, bimolecularThresholdVal, recombinationThresholdVal, bimolecularVal, coreFluxThresholdVal
         
         # cython declations for sensitivity analysis
         cdef numpy.ndarray[numpy.int_t, ndim=1] sensSpeciesIndices
@@ -409,6 +412,7 @@ cdef class ReactionSystem(DASx):
         forwardRateCoefficients = self.kf
         unimolecularThreshold = self.unimolecularThreshold
         bimolecularThreshold = self.bimolecularThreshold
+        recombinationThreshold = self.recombinationThreshold
         
         # Copy the initial conditions to use in evaluating conversions
         y0 = self.y.copy()
@@ -497,12 +501,18 @@ cdef class ReactionSystem(DASx):
                 maxNetworkRate = networkLeakRates[maxNetworkIndex]
                 
             
+            coreFluxThreshold = toleranceMoveToCore * charRate
+            
+            
             if filterReactions:
                 # Calculate unimolecular and bimolecular thresholds for reaction
                 # Set the maximum unimolecular rate to be kB*T/h
-                unimolecularThresholdVal = toleranceMoveToCore * charRate / (2.08366122e10 * self.T.value_si)   
+                unimolecularThresholdVal = coreFluxThresholdVal / (2.08366122e10 * self.T.value_si)   
                 # Set the maximum bimolecular rate to be 1e7 m^3/mol*s, or 1e13 cm^3/mol*s
-                bimolecularThresholdVal = toleranceMoveToCore * charRate / 1e7 
+                bimolecularThresholdVal = coreFluxThresholdVal / 1e7 
+                # Set the maximum recombination rate to be much higher, due to the sensitivity to radical sink reactions
+                # This is set higher than bimolecular diffusion rate by 1e4
+                recombinationThresholdVal = coreFluxThresholdVal / 1e11
                 coreSpeciesConcentrations = self.coreSpeciesConcentrations
                 for i in xrange(numCoreSpecies):
                     if not unimolecularThreshold[i]:
@@ -512,11 +522,15 @@ cdef class ReactionSystem(DASx):
                 for i in xrange(numCoreSpecies):
                     for j in xrange(i, numCoreSpecies):
                         if not bimolecularThreshold[i,j]:
-                            if coreSpeciesConcentrations[i]*coreSpeciesConcentrations[j] > bimolecularThresholdVal:
+                            bimolecularVal = coreSpeciesConcentrations[i]*coreSpeciesConcentrations[j]
+                            if bimolecularVal > bimolecularThresholdVal:
                                 bimolecularThreshold[i,j] = True
+                                recombinationThreshold[i,j] = True   # If bimolecular threshold is true, recombination threshold must be true
+                            elif bimolecularVal > recombinationThresholdVal:
+                                recombinationThreshold[i,j] = True
 
             # Interrupt simulation if that flux exceeds the characteristic rate times a tolerance
-            if maxSpeciesRate > toleranceMoveToCore * charRate and not invalidObject:
+            if maxSpeciesRate > coreFluxThresholdVal and not invalidObject:
                 logging.info('At time {0:10.4e} s, species {1} exceeded the minimum rate for moving to model core'.format(self.t, maxSpecies))
                 self.logRates(charRate, maxSpecies, maxSpeciesRate, maxNetwork, maxNetworkRate)
                 self.logConversions(speciesIndex, y0)
@@ -529,7 +543,7 @@ cdef class ReactionSystem(DASx):
 
             # If pressure dependence, also check the network leak fluxes
             if pdepNetworks:
-                if maxNetworkRate > toleranceMoveToCore * charRate and not invalidObject:
+                if maxNetworkRate > coreFluxThresholdVal and not invalidObject:
                     logging.info('At time {0:10.4e} s, PDepNetwork #{1:d} exceeded the minimum rate for exploring'.format(self.t, maxNetwork.index))
                     self.logRates(charRate, maxSpecies, maxSpeciesRate, maxNetwork, maxNetworkRate)
                     self.logConversions(speciesIndex, y0)
@@ -593,6 +607,7 @@ cdef class ReactionSystem(DASx):
         
         self.unimolecularThreshold = unimolecularThreshold
         self.bimolecularThreshold = bimolecularThreshold
+        self.recombinationThreshold = recombinationThreshold
 
         # Return the invalid object (if the simulation was invalid) or None
         # (if the simulation was valid)
