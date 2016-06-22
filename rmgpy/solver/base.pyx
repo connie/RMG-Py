@@ -501,7 +501,7 @@ cdef class ReactionSystem(DASx):
                 maxNetworkRate = networkLeakRates[maxNetworkIndex]
                 
             
-            coreFluxThreshold = toleranceMoveToCore * charRate
+            coreFluxThresholdVal = toleranceMoveToCore * charRate
             
             
             if filterReactions:
