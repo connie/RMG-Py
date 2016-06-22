@@ -361,6 +361,7 @@ class CoreEdgeReactionModel:
     `networkList`              A list of pressure-dependent reaction networks (:class:`Network` objects)
     `networkCount`             A counter for the number of pressure-dependent networks created
     `indexSpeciesDict`         A dictionary with a unique index pointing to the species objects
+    `coreRadicalList`          Array of boolean flags corresponding to the core species indicating whether it is a radical species
     =========================  ==============================================================
 
 
@@ -395,6 +396,8 @@ class CoreEdgeReactionModel:
         self.verboseComments = False
         self.kineticsEstimator = 'group additivity'
         self.indexSpeciesDict = {}
+        
+        self.coreRadicalList = []
 
     def checkForExistingSpecies(self, molecule):
         """
@@ -682,7 +685,7 @@ class CoreEdgeReactionModel:
 
         return forward
 
-    def enlarge(self, newObject=None, reactEdge=False, unimolecularReact=None, bimolecularReact=None):
+    def enlarge(self, newObject=None, reactEdge=False, unimolecularReact=None, bimolecularReact=None, recombinationReact=None):
         """
         Enlarge a reaction model by processing the objects in the list `newObject`. 
         If `newObject` is a
@@ -781,11 +784,17 @@ class CoreEdgeReactionModel:
                     # This includes a species reacting with itself (if its own concentration is high enough)
                     
                     if bimolecularReact[i,j]:
-                        reactions = list(react(self.core.species[i].copy(deep=True), [self.core.species[j]]))
+                        reactions = list(react(self.core.species[i].copy(deep=True), [self.core.species[j]], recombination=False))
                         # Consider the latest added core species as the 'new' species
                         reactions = [self.inflate(reaction) for reaction in reactions]
                         self.processNewReactions(reactions, self.core.species[j], None)
-
+                    if recombinationReact[i,j]:
+                        # Make sure both species are radicals first
+                        if self.coreRadicalList[i] and self.coreRadicalList[j]:
+                            reactions = list(react(self.core.species[i].copy(deep=True), [self.core.species[j]], recombination=True))
+                            # Consider the latest added core species as the 'new' species
+                            reactions = [self.inflate(reaction) for reaction in reactions]
+                            self.processNewReactions(reactions, self.core.species[j], None)
         ################################################################
         # Begin processing the new species and reactions
             
@@ -1099,6 +1108,9 @@ class CoreEdgeReactionModel:
 
         # Add the species to the core
         self.core.species.append(spec)
+        
+        # Update the radicalList
+        self.coreRadicalList.append(True if spec.molecule[0].isRadical() else False)
         
         rxnList = []
         if spec in self.edge.species:

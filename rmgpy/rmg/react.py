@@ -39,7 +39,7 @@ from rmgpy.data.rmg import getDB
 from rmgpy.scoop_framework.util import map_, WorkerWrapper
 from rmgpy.species import Species
         
-def react(spcA, speciesList=None):
+def react(spcA, speciesList=None, recombination=False):
     """
     Generate reactions between spcA and the list of 
     species for all the reaction families available.
@@ -60,6 +60,9 @@ def react(spcA, speciesList=None):
     Possible combinations between the spcA, and a species from the 
     speciesList is obtained by taking the combinatorial product of the
     two generated [(Molecule, index)] lists.
+    
+    The `recombination` flag indicates whether the R_Recombination family should be used
+    or not.
     """
     speciesList = speciesList if speciesList else []
     if not spcA.reactive: return []
@@ -81,13 +84,14 @@ def react(spcA, speciesList=None):
 
     results = map_(
                 WorkerWrapper(reactMolecules),
-                combos
+                combos,
+                recombination
             )
 
     reactionList = itertools.chain.from_iterable(results)
     return reactionList
 
-def reactMolecules(moleculeTuples):
+def reactMolecules(moleculeTuples, recombination):
     """
     Performs a reaction between
     the resonance isomers.
@@ -101,9 +105,16 @@ def reactMolecules(moleculeTuples):
     molecules, reactantIndices = zip(*moleculeTuples)
     
     reactionList = []
-    for _, family in families.iteritems():
+    
+    if recombination:
+        family = families['R_Recombination']
         rxns = family.generateReactions(molecules)
         reactionList.extend(rxns)
+    else:
+        for _, family in families.iteritems():
+            if family.label != 'R_Recombination':
+                rxns = family.generateReactions(molecules)
+                reactionList.extend(rxns)
 
     for reactant in molecules:
         reactant.clearLabeledAtoms()
