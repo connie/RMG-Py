@@ -1537,6 +1537,7 @@ class Molecule(Graph):
         Iterate through the atoms in the structure and calculate the net charge
         on the overall molecule.
         """
+        cython.declare(charge=int, atom=Atom)
         charge = 0
         for atom in self.vertices:
             charge += atom.charge
