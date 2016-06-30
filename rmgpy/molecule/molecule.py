@@ -977,7 +977,7 @@ class Molecule(Graph):
         sufficient) condition for the associated molecules to be isomorphic.
         """
         if self._fingerprint is None:
-            self._fingerprint = self.getFormula()
+            self._fingerprint = self.toInChI()
         return self._fingerprint
     
     def isIsomorphic(self, other, initialMap=None):
