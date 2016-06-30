@@ -101,6 +101,7 @@ class Species(object):
         self.energyTransferModel = energyTransferModel        
         self.props = props or {}
         self.aug_inchi = aug_inchi
+        self._chemicalFormula = None
         
         # Check multiplicity of each molecule is the same
         if molecule is not None and len(molecule)>1:
@@ -155,6 +156,15 @@ class Species(object):
         self._molecularWeight = quantity.Mass(value)
     molecularWeight = property(getMolecularWeight, setMolecularWeight, """The molecular weight of the species.""")
 
+    def getFormula(self):
+        """
+        Return a string containing the chemical formula.  Used to accelerate graph isomorphism
+        comparisons between two species.  
+        """
+        if self._chemicalFormula is None:
+            self._chemicalFormula = self.molecule[0].getFormula()
+        return self._chemicalFormula
+    
     def generateResonanceIsomers(self):
         """
         Generate all of the resonance isomers of this species. The isomers are
@@ -170,6 +180,9 @@ class Species(object):
         Return ``True`` if the species is isomorphic to `other`, which can be
         either a :class:`Molecule` object or a :class:`Species` object.
         """
+        if self.getFormula() != other.getFormula():
+            # cannot be equivalent if chemical formula's don't match
+            return False
         if isinstance(other, Molecule):
             for molecule in self.molecule:
                 if molecule.isIsomorphic(other):
